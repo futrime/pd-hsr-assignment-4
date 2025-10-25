@@ -5,9 +5,6 @@ import cv2
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
-import transformers
-import transformers.image_utils
-import transformers.video_utils
 from PIL.Image import Image
 
 import detectors
@@ -45,7 +42,7 @@ def main() -> None:
 
     for file_name in IMAGE_FILE_NAMES:
         image_path = os.path.join(ASSETS_DIR, file_name)
-        image = transformers.image_utils.load_image(image_path)
+        image = PIL.Image.open(image_path).convert("RGB")
 
         for detector in detectors.get_image_detectors():
             print()
@@ -65,11 +62,21 @@ def main() -> None:
             detection_vis.save(output_path)
 
     for file_name in VIDEO_FILE_NAMES:
-        video_path = transformers.video_utils.Path(os.path.join(ASSETS_DIR, file_name))
-        video, metadata = transformers.video_utils.load_video(
-            video_path, backend="opencv"
-        )
-        frames = [PIL.Image.fromarray(frame) for frame in video]
+        video_path = os.path.join(ASSETS_DIR, file_name)
+        video = cv2.VideoCapture(video_path)
+
+        # Get video properties
+        fps = video.get(cv2.CAP_PROP_FPS)
+        width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        frames = []
+        while True:
+            ret, frame = video.read()
+            if not ret:
+                break
+            frames.append(PIL.Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+        video.release()
 
         for detector in detectors.get_video_detectors():
             print()
@@ -88,8 +95,8 @@ def main() -> None:
             video_writer = cv2.VideoWriter(
                 filename=output_path,
                 fourcc=cv2.VideoWriter.fourcc(*"mp4v"),
-                fps=metadata.fps,
-                frameSize=(video.shape[2], video.shape[1]),
+                fps=fps,
+                frameSize=(width, height),
             )
             for frame, frame_detections in zip(frames, detections):
                 detection_vis = visualize_detections(frame, frame_detections)

@@ -19,7 +19,6 @@
 我们已经在`detectors.py`提供了一些示例方法，你可以参考它们来实现你的检测器。请注意，你不能直接使用以下这些示例方法来直接完成作业，你需要根据你的数据和思路进行修改和创新。
 
 - `rgb_mbr_image_detector`: 在RGB色彩空间上检测白色像素，然后通过最小外接矩形定位足球。
-- `yolos_image_detector`: 使用预训练的 YOLOS Tiny 模型进行目标检测，并筛选出类别为“sports ball”的检测结果。
 - `faster_rcnn_image_detector`: 使用预训练的 Faster R-CNN ResNet50 FPN 模型进行目标检测，并筛选出类别为“sports ball”的检测结果。
 
 ### 我们提供的代码框架

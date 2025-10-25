@@ -7,7 +7,6 @@ import torch
 import torchvision.models.detection
 import torchvision.transforms.functional
 import tqdm
-import transformers
 from PIL.Image import Image
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
 
@@ -97,36 +96,6 @@ def rgb_mbr_image_detector(image: Image) -> list[Detection]:
     ]
 
 
-yolos_pipeline = transformers.pipeline("object-detection", model="hustvl/yolos-tiny")
-
-
-@register_image_detector
-def yolos_image_detector(image: Image) -> list[Detection]:
-    """An example image detector using YOLOS Tiny object detection model."""
-
-    results = yolos_pipeline(image)
-
-    detections = [
-        Detection(
-            x=int((det["box"]["xmin"] + det["box"]["xmax"]) / 2),
-            y=int((det["box"]["ymin"] + det["box"]["ymax"]) / 2),
-            r=int(
-                (
-                    det["box"]["xmax"]
-                    - det["box"]["xmin"]
-                    + det["box"]["ymax"]
-                    - det["box"]["ymin"]
-                )
-                / 4
-            ),
-        )
-        for det in results
-        if det["label"] == "sports ball" and det["score"] > 0.5
-    ]
-
-    return detections
-
-
 faster_rcnn_model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
     weights=FasterRCNN_ResNet50_FPN_Weights.DEFAULT
 )
@@ -141,7 +110,8 @@ def faster_rcnn_image_detector(image: Image) -> list[Detection]:
 
     batch = [preprocess(torchvision.transforms.functional.pil_to_tensor(image))]
 
-    prediction = faster_rcnn_model(batch)[0]
+    with torch.inference_mode():
+        prediction = faster_rcnn_model(batch)[0]
 
     boxes = prediction["boxes"][
         prediction["labels"]

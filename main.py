@@ -1,130 +1,103 @@
 import os
-from typing import NamedTuple
+import timeit
 
 import cv2
 import numpy as np
-from numpy.typing import NDArray
+import PIL.Image
+import PIL.ImageDraw
+import transformers
+import transformers.image_utils
+import transformers.video_utils
+from PIL.Image import Image
+
+import detectors
+from detectors import Detection
+
+ASSETS_DIR = "./assets/"
+OUTPUTS_DIR = "./outputs/"
+
+IMAGE_FILE_NAMES = [
+    "1.png",
+    "2.png",
+    "3.png",
+    "4.png",
+    "5.png",
+    "6.png",
+    "7.png",
+    "8.png",
+]
+VIDEO_FILE_NAMES = [
+    "9.mp4",
+    "10.mp4",
+]
 
 
-class Detection(NamedTuple):
-    x: int
-    y: int
-    r: int
-
-
-def detect_image(image: NDArray[np.uint8]) -> list[Detection]:
-    """Your custom detection logic for images.
-
-    Args:
-        image: Input image as a NumPy array with shape (H, W, C).
-
-    Returns:
-        A list of detections.
-    """
-
-    # A simple example: detect footballs with RGB thresholding + minimum bounding rectangle.
-    lower_bound = np.array([240, 240, 240])
-    upper_bound = np.array([255, 255, 255])
-    mask = cv2.inRange(image, lower_bound, upper_bound)
-    detections = []
-    ys, xs = np.where(mask > 0)
-    if len(xs) > 0:
-        min_x, max_x = int(xs.min()), int(xs.max())
-        min_y, max_y = int(ys.min()), int(ys.max())
-        center_x = (min_x + max_x) // 2
-        center_y = (min_y + max_y) // 2
-        radius = (max_x - min_x + max_y - min_y) // 4
-        detections.append(Detection(center_x, center_y, radius))
-    return detections
-
-
-def detect_video(video: NDArray[np.uint8]) -> list[list[Detection]]:
-    """Your custom detection logic for videos.
-
-    Args:
-        video: Input video as a NumPy array with shape (T, H, W, C).
-
-    Returns:
-        A list of lists of detections for each frame.
-    """
-
-    return [detect_image(frame) for frame in video]
+def visualize_detections(image: Image, detections: list[Detection]) -> Image:
+    image_copy = image.copy()
+    draw = PIL.ImageDraw.Draw(image_copy)
+    for det in detections:
+        draw.circle((det.x, det.y), det.r, outline="red", width=3)
+    return image_copy
 
 
 def main() -> None:
-    ASSETS_DIR = "./assets/"
-    OUTPUTS_DIR = "./outputs/"
-
-    IMAGE_FILE_NAMES = [
-        "1.png",
-        "2.png",
-        "3.png",
-        "4.png",
-        "5.png",
-        "6.png",
-        "7.png",
-        "8.png",
-    ]
-    VIDEO_FILE_NAMES = [
-        "9.mp4",
-        "10.mp4",
-    ]
-
-    def load_image(path: str) -> NDArray[np.uint8]:
-        image = cv2.imread(path)
-        if image is None:
-            raise FileNotFoundError(f"Image not found at path: {path}")
-        return image.astype(np.uint8)
-
-    def load_video(path: str) -> tuple[NDArray[np.uint8], float]:
-        cap = cv2.VideoCapture(path)
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        frames: list[NDArray[np.uint8]] = []
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frames.append(frame.astype(np.uint8))
-        cap.release()
-        return np.stack(frames), fps
-
-    def visualize_detections(
-        image: NDArray[np.uint8], detections: list[Detection]
-    ) -> NDArray[np.uint8]:
-        vis_image = image.copy()
-        for det in detections:
-            cv2.circle(vis_image, (det.x, det.y), det.r, (0, 0, 255), 2)
-        return vis_image
-
     os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
     for file_name in IMAGE_FILE_NAMES:
         image_path = os.path.join(ASSETS_DIR, file_name)
-        image = load_image(image_path)
+        image = transformers.image_utils.load_image(image_path)
 
-        detections = detect_image(image)
+        for detector in detectors.get_image_detectors():
+            print()
+            print(f"Processing image {file_name} with detector {detector.__name__}")
 
-        output_path = os.path.join(OUTPUTS_DIR, f"detected_{file_name}")
-        detection_vis = visualize_detections(image, detections)
-        cv2.imwrite(output_path, detection_vis)
+            try:
+                start_time = timeit.default_timer()
+                detections = detector(image)
+                elapsed_time = timeit.default_timer() - start_time
+                print(f"Took {elapsed_time} seconds")
+            except NotImplementedError:
+                print("Not implemented, skipping...")
+                continue
+
+            output_path = os.path.join(OUTPUTS_DIR, f"{detector.__name__}_{file_name}")
+            detection_vis = visualize_detections(image, detections)
+            detection_vis.save(output_path)
 
     for file_name in VIDEO_FILE_NAMES:
-        video_path = os.path.join(ASSETS_DIR, file_name)
-        video, fps = load_video(video_path)
-
-        detections = detect_video(video)
-
-        output_path = os.path.join(OUTPUTS_DIR, f"detected_{file_name}")
-        video_writer = cv2.VideoWriter(
-            filename=output_path,
-            fourcc=cv2.VideoWriter.fourcc(*"mp4v"),
-            fps=fps,
-            frameSize=(video.shape[2], video.shape[1]),
+        video_path = transformers.video_utils.Path(os.path.join(ASSETS_DIR, file_name))
+        video, metadata = transformers.video_utils.load_video(
+            video_path, backend="opencv"
         )
-        for frame, frame_detections in zip(video, detections):
-            detection_vis = visualize_detections(frame, frame_detections)
-            video_writer.write(detection_vis)
-        video_writer.release()
+        frames = [PIL.Image.fromarray(frame) for frame in video]
+
+        for detector in detectors.get_video_detectors():
+            print()
+            print(f"Processing video {file_name} with detector {detector.__name__}")
+
+            try:
+                start_time = timeit.default_timer()
+                detections = detector(frames)
+                elapsed_time = timeit.default_timer() - start_time
+                print(f"Took {elapsed_time} seconds")
+            except NotImplementedError:
+                print("Not implemented, skipping...")
+                continue
+
+            output_path = os.path.join(OUTPUTS_DIR, f"{detector.__name__}_{file_name}")
+            video_writer = cv2.VideoWriter(
+                filename=output_path,
+                fourcc=cv2.VideoWriter.fourcc(*"mp4v"),
+                fps=metadata.fps,
+                frameSize=(video.shape[2], video.shape[1]),
+            )
+            for frame, frame_detections in zip(frames, detections):
+                detection_vis = visualize_detections(frame, frame_detections)
+                detection_vis_bgr = cv2.cvtColor(
+                    np.array(detection_vis), cv2.COLOR_RGB2BGR
+                )
+                video_writer.write(detection_vis_bgr)
+            video_writer.release()
 
 
 if __name__ == "__main__":

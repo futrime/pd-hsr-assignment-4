@@ -61,7 +61,42 @@ def dummy_video_detector(frames: list[Image]) -> list[list[Detection]]: ...
 
 ### 快速上手指南
 
-首先，请确保已经解压所有文件到同一目录下。你的文件结构应该是这样的：
+在开始之前，你需要安装 Miniconda。请运行以下命令下载安装包：
+
+```bash
+wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
+```
+
+下载完毕后，运行安装脚本：
+
+```bash
+bash ~/Miniconda3-latest-Linux-x86_64.sh -b -c -u
+```
+
+关闭终端并重新打开。然后，运行以下命令添加清华源：
+
+```bash
+cat <<EOF > ~/.condarc
+channels:
+  - defaults
+show_channel_urls: true
+default_channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2
+custom_channels:
+  conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  pytorch: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+EOF
+```
+
+添加完毕后，创建并激活一个新的 Conda 环境。在这里，我们将环境命名为 `pd-hsr-assignment-4`：
+
+```bash
+conda create -n pd-hsr-assignment-4 -y python=3.12
+```
+
+Miniconda 环境配置完毕后，你可以开始运行本代码框架了。首先，请确保已经解压所有文件到同一目录下。你的文件结构应该是这样的：
 
 ```
 .
@@ -82,9 +117,13 @@ def dummy_video_detector(frames: list[Image]) -> list[list[Detection]]: ...
 └── README.pdf
 ```
 
-请确保你已经配置好了Python 3.12及以上版本的运行环境。你可以输入命令 `python -V` 来检查你的Python版本。如果不是，你可以使用`uv`或`conda`等工具来创建合适的环境并激活。
+切换到解压的所有文件所在的目录后，激活你刚才创建的 Conda 环境：
 
-然后，请运行以下命令安装所需依赖。
+```bash
+conda activate pd-hsr-assignment-4
+```
+
+随后，安装所需依赖。
 
 ```bash
 pip install -e .
@@ -179,7 +218,7 @@ python main.py
   - 机器学习方法（10分）
   - 其他方法（如果有的话）（每种5分）
 
-对传统方法的输出结果，按 8 个图片和 2 个视频的检测效果进行评分，每个图片/视频 2 分，但满分不超过 10 分；对机器学习方法的输出结果，按 `6.png` ~ `7.png` 和 2 个视频的检测效果进行评分，每个图片/视频 2 分，满分 10 分。
+对传统方法的输出结果，按 8 个图片和 2 个视频的检测效果进行评分，每个图片/视频 2 分，但满分不超过 10 分；对机器学习方法的输出结果，按 `6.png` ~ `8.png` 和 2 个视频的检测效果进行评分，每个图片/视频 2 分，满分 10 分。
 
 若实现了更多的方法，每多实现一种**代码实现结构不同**的方法可获得加分。判定示例：
 - 传统方法之间：例如“RGB阈值+最小外接矩形” 与 “霍夫圆变换” 视为结构不同；

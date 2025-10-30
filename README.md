@@ -64,7 +64,7 @@ def dummy_video_detector(frames: list[Image]) -> list[list[Detection]]: ...
 在开始之前，你需要安装 Miniconda。请运行以下命令下载安装包：
 
 ```bash
-wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-latest-Linux-x86_64.sh
+wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py312_24.11.1-0-Linux-x86_64.sh
 ```
 
 下载完毕后，运行安装脚本：

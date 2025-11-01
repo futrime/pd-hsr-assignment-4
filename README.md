@@ -70,7 +70,7 @@ wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py312_24
 下载完毕后，运行安装脚本：
 
 ```bash
-bash ~/Miniconda3-latest-Linux-x86_64.sh -u
+bash ~/Miniconda3-py312_24.11.1-0-Linux-x86_64.sh -u
 ```
 
 按照提示进行安装，你可能需要输入`y`、`yes`或回车。当你阅读用户条例的时候，可以按一次`q`跳过。

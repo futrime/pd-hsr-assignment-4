@@ -116,7 +116,7 @@ Miniconda 环境配置完毕后，你可以开始运行本代码框架了。首�
 ├── detectors.py
 ├── main.py
 ├── pyproject.toml
-└── README.pdf
+└── README.md
 ```
 
 切换到解压的所有文件所在的目录后，激活你刚才创建的 Conda 环境：
